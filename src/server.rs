@@ -128,6 +128,8 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) {
     // a receiver is needed, the subscribe() method on the sender is used to create
     // one.
     let (notify_shutdown, _) = broadcast::channel(1);
+
+    // 创建多生产者、单消费者的通道
     let (shutdown_complete_tx, shutdown_complete_rx) = mpsc::channel(1);
 
     // Initialize the listener state
@@ -191,6 +193,7 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) {
     // receive the shutdown signal and can exit
     drop(notify_shutdown);
     // Drop final `Sender` so the `Receiver` below can complete
+    // 每个 sender 都超出了范围或被放弃时，就不再可能向通道发送更多的消息了。在这一点上，接收器上的 recv 调用将返回None，这意味着所有的发送者都消失了，通道被关闭。
     drop(shutdown_complete_tx);
 
     // Wait for all active connections to finish processing. As the `Sender`
